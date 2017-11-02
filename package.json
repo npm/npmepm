@@ -4,17 +4,23 @@
   "description": "npm Enterprise Post Mortem",
   "main": "index.js",
   "scripts": {
+    "ps:image:counts": "node src/dockerps.js image-counts",
+    "ps:containers:by-age": "node src/dockerps.js countainers-by-age",
+    "dockerps": "node src/dockerps.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Joel Edwards <joel@npmjs.com>",
   "license": "ISC",
   "dependencies": {
+    "bluebird": "^3.5.1",
     "chalk": "^2.3.0",
     "durations": "^3.0.0",
     "js-yaml": "^3.10.0",
     "oboe": "^2.1.4",
     "ramda": "^0.25.0",
+    "shelljs": "^0.7.8",
     "table": "^4.0.2",
-    "tap": "^10.7.2"
+    "tap": "^10.7.2",
+    "yargs": "^10.0.3"
   }
 }
