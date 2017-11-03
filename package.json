@@ -4,10 +4,7 @@
   "description": "npm Enterprise Post Mortem",
   "main": "index.js",
   "scripts": {
-    "ps:image:counts": "node src/dockerps.js image-counts",
-    "ps:containers:by-age": "node src/dockerps.js countainers-by-age",
-    "dockerps": "node src/dockerps.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dockerps": "node src/dockerps.js"
   },
   "author": "Joel Edwards <joel@npmjs.com>",
   "license": "ISC",

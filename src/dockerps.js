@@ -11,7 +11,20 @@ const chalk = require('chalk')
 const {table} = require('table')
 
 const {
-  equals, flatten, groupBy, groupWith, head, last, map, prepend, reduce, sortBy, split, toPairs, values
+  compose,
+  equals,
+  flatten,
+  groupBy,
+  groupWith,
+  head,
+  last,
+  map,
+  prepend,
+  reduce,
+  sortBy,
+  split,
+  toPairs,
+  values
 } = require('ramda')
 
 // Colors
@@ -22,70 +35,124 @@ const orange = chalk.keyword('orange')
 
 const fileExists = P.promisify(fs.exists)
 
-const defaultBailOptions = {
-  code: 1,
-  showHelp: false
-}
+// Display message and/or help and exit.
+function bail (message, options) {
+  const {code, showHelp} = {
+    code: 1,
+    showHelp: false,
+    ...options
+  }
 
-function bail(message, options) {
-  const {code, showHelp} = {...defaultBailOptions, ...options}
   if (message) console.error(message)
   if (showHelp) yargs.showHelp()
+
   process.exit(code)
 }
 
-//const yargBuilder = (yargs) => yargs.positional('<bundle-dir>', {type: string})
+// Containers listing sorted by age.
+const containersByAge = {
+  extractor: ({Id: id, Image: image, State: state, Created: created}) => ({
+    id, image, state,
+    created: new Date(created * 1000).toISOString()
+  }),
+  handler: ({nodes, nodeCount}) => {
+    const selector = ({created}) => created
+    const convertToRow = ({created, image, state, id}) => [id, image, state, created]
+    const headers = ['ID', 'Image', 'State', 'Created']
 
-const yargs = require('yargs')
-  .usage('$0 <bundle-dir>')
-  //.usage('$0 <command> <bundle-dir>')
-  //.command('image-counts', 'List the number of containers for each image', yargBuilder, (grr) => runPs(grr.bundleDir, imageCounts))
-  //.command('image-state-counts', 'List the number of containers ', yargBuilder, (grr) => runPs(grr.bundleDir, imageCounts))
-  //.command('containers-by-age', '', yargBuilder,  (grr) => runPs(grr.bundleDir, containersByAge))
+    const rows = compose(
+      prepend(headers),
+      map(convertToRow),
+      sortBy(selector)
+    )(nodes)
+
+    console.log(table(rows))
+    console.log(green(`Processed ${nodeCount} nodes.`))
+  }
+}
+
+// Listing of images grouped by id.
+const imageCounts = {
+  extractor: ({Id: id, Image: image}) => ({id, image}),
+  handler: ({nodes, nodeCount}) => {
+    const selector = ({image}) => image
+    const grouper = (a, b) => equals(a.image, b.image)
+    const convertToRow = group => [head(group).image, group.length]
+    const headers = ['Image', 'Container Count']
+
+    const rows = compose(
+      prepend(headers),
+      map(values),
+      map(convertToRow),
+      groupWith(grouper),
+      sortBy(selector)
+    )(nodes)
+
+    console.log(table(rows))
+    console.log(green(`Processed ${nodeCount} nodes.`))
+  }
+}
+
+// Listing images grouped by id and state.
+const imageStateCounts = {
+  extractor: ({Id: id, Image: image, State: state}) => ({id, image, state}),
+  handler: ({nodes, nodeCount}) => {
+    const selector = ({image, state}) => ([image, state])
+    const grouper = (a, b) => equals(selector(a), selector(b))
+    const convertToRow = group => {
+      const {image, state} = head(group)
+      return [image, state, group.length]
+    }
+    const headers = ['Image', 'State', 'Container Count']
+
+    const rows = compose(
+      prepend(headers),
+      map(values),
+      map(convertToRow),
+      groupWith(grouper),
+      sortBy(selector)
+    )(nodes)
+
+    console.log(table(rows))
+    console.log(green(`Processed ${nodeCount} nodes.`))
+  }
+}
+
+// Program runner.
+function runPs (dir, {extractor, handler}) {
+  const bundleDir = path.resolve(dir)
+
+  if (!sh.test('-e', bundleDir)) bail(`${bundleDir}: ${red('path does not exist')}`)
+  if (!sh.test('-d', bundleDir)) bail(`${bundleDir}: ${red('path is not a directory')}`)
+
+  const psFile = path.resolve(bundleDir, 'daemon/docker/docker_ps_a.json')
+
+  if (!sh.test('-e', psFile)) bail(`${psFile}: ${red('path does not exist')}`)
+  if (!sh.test('-f', psFile)) bail(`${psFile}: ${red('path is not a file')}`)
+
+  let nodeCount = 0
+
+  oboe(fs.createReadStream(psFile))
+  .node('!.*', node => {
+    // Visit every top-level node in the array.
+    nodeCount += 1
+
+    // Forward only the desired subset of the node's data.
+    return extractor ? extractor(node) : node
+  })
+  .done(nodes => handler({nodes, nodeCount}))
+  .fail(error => {
+    console.error(red(`Error reading ${psFile} :`), error)
+  })
+}
+
+const yargBuilder = (yargs) => yargs.positional('<bundle-dir>', {type: 'string'})
+const runner = (options) => ({bundleDir}) => runPs(bundleDir, options)
+
+const args = require('yargs')
+  .command('image-counts <bundle-dir>', 'List images grouped by id', yargBuilder, runner(imageCounts))
+  .command('image-state-counts <bundle-dir>', 'List images grouped by id and state', yargBuilder, runner(imageStateCounts))
+  .command('containers-by-age <bundle-dir>', 'List containers ordered by age', yargBuilder, runner(containersByAge))
   .help('help')
   .alias('help', 'h')
-
-const args = yargs.argv
-
-if (args._.length != 1) bail(null, {showHelp: true})
-
-const bundleDir = path.resolve(head(args._))
-
-if (!sh.test('-e', bundleDir)) bail(`${bundleDir}: ${red('path does not exist')}`)
-if (!sh.test('-d', bundleDir)) bail(`${bundleDir}: ${red('path is not a directory')}`)
-
-const psFile = path.resolve(bundleDir, 'daemon/docker/docker_ps_a.json')
-
-if (!sh.test('-e', psFile)) bail(`${psFile}: ${red('path does not exist')}`)
-if (!sh.test('-f', psFile)) bail(`${psFile}: ${red('path is not a file')}`)
-
-let nodeCount = 0
-
-oboe(fs.createReadStream(psFile))
-.node('!.*', node => {
-  // Visit every top-level node in the array.
-  const {Id: id, Image: image, State: state} = node
-  nodeCount += 1
-
-  if (nodeCount == 1) {
-    console.log(JSON.stringify(node, null, 2))
-  }
-
-  // Forward only a subset of the node's data.
-  return {
-    id, image, state
-  }
-})
-.done(nodes => {
-  const sorted = sortBy(({image, state}) => ([image, state]))(nodes)
-
-  const comp = ({image, state}) => ([image, state])
-  const groups = groupWith((a, b) => equals(comp(a), comp(b)))(sorted)
-
-  const typeCounts = map(group => [head(group).image, head(group).state, group.length])(groups)
-  console.log(table(prepend(['Image', 'State', 'Container Count'])(sortBy(x => x)(map(values)(typeCounts)))))
-  console.log(green(`Processed ${nodeCount} nodes.`))
-})
-.fail(error => {
-  console.error(red(`Error reading ${psFile} :`), error)
-})
+  .argv
