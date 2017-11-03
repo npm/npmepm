@@ -1,5 +1,5 @@
 {
-  "name": "npmepm",
+  "name": "@npmcorp/npmepm",
   "version": "1.0.0",
   "description": "npm Enterprise Post Mortem",
   "main": "index.js",
@@ -10,7 +10,7 @@
     "start": "node bin/npmepm.js",
     "test": "tap test/*.js"
   },
-  "author": "Joel Edwards <joel@npmjs.com>",
+  "author": "Joel Edwards <joeledwards@gmail.com>",
   "license": "ISC",
   "dependencies": {
     "bluebird": "^3.5.1",
