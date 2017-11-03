@@ -3,8 +3,12 @@
   "version": "1.0.0",
   "description": "npm Enterprise Post Mortem",
   "main": "index.js",
+  "bin": {
+    "npmepm": "bin/npmepm.js"
+  },
   "scripts": {
-    "dockerps": "node src/dockerps.js"
+    "start": "node bin/npmepm.js",
+    "test": "tap test/*.js"
   },
   "author": "Joel Edwards <joel@npmjs.com>",
   "license": "ISC",
