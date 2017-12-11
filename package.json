@@ -4,11 +4,12 @@
   "description": "npm Enterprise Post Mortem",
   "main": "index.js",
   "bin": {
-    "npmepm": "bin/npmepm.js"
+    "npmepm": "bin/npmepm.js",
+    "epm": "bin/npmepm.js"
   },
   "scripts": {
     "start": "node bin/npmepm.js",
-    "test": "tap test/*.js"
+    "test": "tap --cov test/*.test.js"
   },
   "author": "Joel Edwards <joeledwards@gmail.com>",
   "license": "ISC",
