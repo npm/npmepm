@@ -14,20 +14,20 @@
   "author": "Joel Edwards <joeledwards@gmail.com>",
   "license": "ISC",
   "dependencies": {
+    "@buzuli/color": "^1.2.0",
     "bluebird": "^3.5.1",
     "chalk": "^2.3.0",
     "cli-truncate": "^1.1.0",
-    "durations": "^3.0.0",
+    "durations": "^3.4.1",
     "gunzip-maybe": "^1.4.1",
     "js-yaml": "^3.10.0",
     "oboe": "^2.1.4",
     "ramda": "^0.25.0",
     "shelljs": "^0.7.8",
     "table": "^4.0.2",
-    "tap": "^10.7.2",
-    "tar": "^4.0.2",
+    "tap": "^10.7.3",
     "tar-stream": "^1.5.5",
     "walk": "^2.3.9",
-    "yargs": "^10.0.3"
+    "yargs": "^10.1.2"
   }
 }

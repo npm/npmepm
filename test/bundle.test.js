@@ -8,7 +8,7 @@ const bundle = require('../lib/bundle')
 
 const sha256 = text => crypto.createHash('sha256').update(text).digest('hex')
 
-tap.test(`Both tar and directory should identical content (paths and data)`, t => {
+tap.test(`Both tar and directory should have identical content (paths and data)`, t => {
   Promise
   .all([
     sizeOrderHash(path.resolve(__dirname, 'test-data')),
@@ -34,14 +34,12 @@ function sizeOrderHash(path) {
       .on('data', data => hash.update(data))
       .on('end', () => {
         const digest = hash.digest('hex')
-        //console.log(digest, path)
         hashes.push(digest)
         next()
       })
       .resume()
     })
     .on('end', () => {
-      //console.log(hashes.sort())
       resolve(sha256(hashes.sort().join('')))
     })
   })
