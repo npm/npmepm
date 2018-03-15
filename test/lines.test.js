@@ -9,11 +9,11 @@ const {
   extractLines
 } = require('../lib/lines')
 
-const extract = async (text, filter, extractor) => {
+const extract = (text, filter, extractor) => {
   const input = new ReadableStreamBuffer()
   input.put(Buffer.from(text))
   input.stop()
-  return await extractor(filter)(input)
+  return extractor(filter)(input)
 }
 
 const line = async (text, filter) => extract(text, filter, extractLine)

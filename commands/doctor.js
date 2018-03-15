@@ -4,43 +4,43 @@ module.exports = {
   handler
 }
 
-function handler({bundle}) {
+function handler ({bundle}) {
   const {green, red, yellow, emoji} = require('@buzuli/color')
   const r = require('ramda')
 
   const health = tracker()
 
   require('../lib/bundle')(bundle)
-  .on('error', error => {
-    console.error(error)
-    console.error(emoji.inject(red(`Error reading bundle ${yellow(bundle)}. Details above :point_up:`)))
-  })
-  .on('file', health.checker)
-  .once('end', () => {
-    const issues = health.issues()
-    const ic = issues.length // issue count
-    const errors = r.filter(({level}) => level === 'error')(issues)
-    const warnings = r.filter(({level}) => level === 'warn')(issues)
-    const issueIcon = errors.length > 0 ? ':x:' : ':warning:'
-    const issueColor = errors.length > 0 ? red : yellow
-
-    if (ic > 0) {
-      warnings.forEach(({message}) => {
-        console.info(emoji.inject(`:warning:  ${yellow('WARNING')} : ${message}`))
-      })
-      errors.forEach(({message}) => {
-        console.info(emoji.inject(`:x:  ${red('ERROR')} : ${message}`))
+    .on('error', error => {
+      console.error(error)
+      console.error(emoji.inject(red(`Error reading bundle ${yellow(bundle)}. Details above :point_up:`)))
     })
-      console.log(issueColor(emoji.inject(`${issueIcon}  There ${ic == 1 ? 'is' : 'are'} ${health.issues().length} health issue${ic == 1 ? '' : 's'} with this cluster. Details above :point_up:`)))
-    } else {
-      console.log(emoji.inject(':white_check_mark: '), green('Appears healthy.'))
-    }
-  })
+    .on('file', health.checker)
+    .once('end', () => {
+      const issues = health.issues()
+      const ic = issues.length // issue count
+      const errors = r.filter(({level}) => level === 'error')(issues)
+      const warnings = r.filter(({level}) => level === 'warn')(issues)
+      const issueIcon = errors.length > 0 ? ':x:' : ':warning:'
+      const issueColor = errors.length > 0 ? red : yellow
+
+      if (ic > 0) {
+        warnings.forEach(({message}) => {
+          console.info(emoji.inject(`:warning:  ${yellow('WARNING')} : ${message}`))
+        })
+        errors.forEach(({message}) => {
+          console.info(emoji.inject(`:x:  ${red('ERROR')} : ${message}`))
+        })
+        console.log(issueColor(emoji.inject(`${issueIcon}  There ${ic === 1 ? 'is' : 'are'} ${health.issues().length} health issue${ic === 1 ? '' : 's'} with this cluster. Details above :point_up:`)))
+      } else {
+        console.log(emoji.inject(':white_check_mark: '), green('Appears healthy.'))
+      }
+    })
 }
 
 function tracker () {
   const issues = []
-  const checkFile = fileChecker() 
+  const checkFile = fileChecker()
 
   return {
     issues: () => issues,
@@ -52,72 +52,71 @@ function tracker () {
 
 function fileChecker () {
   const r = require('ramda')
-  const ReadableStream = require('stream').Readable
-  const {blue, gray} = require('@buzuli/color')
+  const {blue, orange, yellow} = require('@buzuli/color')
 
   const {
     extractLine
   } = require('../lib/lines')
 
-  return async (context) => { 
-    const {next, path, skip, stream, issues} = context
+  return async (context) => {
+    const {next, path, skip, stream} = context
 
     try {
       let testSuffix = 'deadbeef'
-      //const testSuffix = 'sysconfig/replicated'
-      
+      // const testSuffix = 'sysconfig/replicated'
+
       // XXX:
       // - for testing : ~/Documents/support/HP/2018-02-15
 
       // TODO:
       // - confirm all expected containers are running
       // - confirm all expected containers have been running for longer than 15 min.
-      
+
       // Health
-      //testSuffix = 'docker_inspect.json' // for each container
-      //testSuffix = 'daemon/commands/date'
-      //testSuffix = 'daemon/commands/df'
-      //testSuffix = 'daemon/commands/df_inodes'
-      //testSuffix = 'daemon/commands/dmesg' // Cound unique messages
-      //testSuffix = 'daemon/commands/free'
-      //testSuffix = 'daemon/docker/docker_info.json'
-      //testSuffix = 'daemon/docker/docker_ps_a.json'
-      //testSuffix = 'daemon/proc/cpuinfo' // powerful enough (4+ cores @ 2+ GHz)
-      //testSuffix = 'daemon/proc/meminfo' // at least 16GB (ideally 32+)
-      //testSuffix = 'daemon/proc/version' // is kernel version problematic?
-      //testSuffix = 'daemon/proc/vmstat'
-      //testSuffix = 'daemon/etc/systemd/system/docker.service.d/http-proxy.conf'
-      //testSuffix = 'daemon/replicated/hostInfo.json'
-      //testSuffix = 'daemon/replicated/params.json' // Replicated configuration
-      //testSuffix = 'scheduler/nodes.txt' // npme cluster nodes (docker servers)
+      // testSuffix = 'docker_inspect.json' // for each container
+      // testSuffix = 'daemon/commands/date'
+      // testSuffix = 'daemon/commands/df'
+      // testSuffix = 'daemon/commands/df_inodes'
+      // testSuffix = 'daemon/commands/dmesg' // Cound unique messages
+      // testSuffix = 'daemon/commands/free'
+      // testSuffix = 'daemon/docker/docker_info.json'
+      // testSuffix = 'daemon/docker/docker_ps_a.json'
+      // testSuffix = 'daemon/proc/cpuinfo' // powerful enough (4+ cores @ 2+ GHz)
+      // testSuffix = 'daemon/proc/meminfo' // at least 16GB (ideally 32+)
+      // testSuffix = 'daemon/proc/version' // is kernel version problematic?
+      // testSuffix = 'daemon/proc/vmstat'
+      // testSuffix = 'daemon/etc/systemd/system/docker.service.d/http-proxy.conf'
+      // testSuffix = 'daemon/replicated/hostInfo.json'
+      // testSuffix = 'daemon/replicated/params.json' // Replicated configuration
+      // testSuffix = 'scheduler/nodes.txt' // npme cluster nodes (docker servers)
 
       // Informational
-      //testSuffix = 'errors.txt'
-      //testSuffix = 'license.txt' // Determine if AppVersion is out of date
-      //testSuffix = 'daemon/replicated/daemon.json'
-      //testSuffix = 'daemon/etc/sysconfig/replicated'
-      //testSuffix = 'daemon/etc/sysconfig/replicated-operator'
+      // testSuffix = 'errors.txt'
+      // testSuffix = 'license.txt' // Determine if AppVersion is out of date
+      // testSuffix = 'daemon/replicated/daemon.json'
+      // testSuffix = 'daemon/etc/sysconfig/replicated'
+      // testSuffix = 'daemon/etc/sysconfig/replicated-operator'
 
       // Advanced
-      //testSuffix = 'stderr.log'
-      //testSuffix = 'daemon/commands/ip_addr_show'
-      //testSuffix = 'daemon/commands/ip_link_show'
-      //testSuffix = 'daemon/commands/ip_route_show'
-      //testSuffix = 'daemon/journald/replicated-operator.log'
-      //testSuffix = 'daemon/journald/replicated-ui.log'
-      //testSuffix = 'daemon/journald/replicated.log'
-      //testSuffix = 'daemon/replicated/replicated-operator.log'
-      //testSuffix = 'daemon/replicated/replicated-ui.log'
-      //testSuffix = 'daemon/replicated/replicated.log'
-      //testSuffix = 'daemon/replicated/config-commands.txt'
-      //testSuffix = 'daemon/replicated/ledis-app.dump'
-      //testSuffix = 'daemon/replicated/ledis-registry.dump'
-      //testSuffix = 'daemon/replicated/replicated-inspect.json'
-      //testSuffix = 'daemon/replicated/replicated-operator-inspect.json'
-      //testSuffix = 'daemon/replicated/replicated-ui-inspect.json'
-      //testSuffix = 'daemon/replicated/replicated-versions.txt'
-      //testSuffix = 'daemon/replicated/runtime/goroutines.txt'
-      //testSuffix = 'daemon/replicated/tasks.txt'
+      // testSuffix = 'stderr.log'
+      // testSuffix = 'daemon/commands/ip_addr_show'
+      // testSuffix = 'daemon/commands/ip_link_show'
+      // testSuffix = 'daemon/commands/ip_route_show'
+      // testSuffix = 'daemon/journald/replicated-operator.log'
+      // testSuffix = 'daemon/journald/replicated-ui.log'
+      // testSuffix = 'daemon/journald/replicated.log'
+      // testSuffix = 'daemon/replicated/replicated-operator.log'
+      // testSuffix = 'daemon/replicated/replicated-ui.log'
+      // testSuffix = 'daemon/replicated/replicated.log'
+      // testSuffix = 'daemon/replicated/config-commands.txt'
+      // testSuffix = 'daemon/replicated/ledis-app.dump'
+      // testSuffix = 'daemon/replicated/ledis-registry.dump'
+      // testSuffix = 'daemon/replicated/replicated-inspect.json'
+      // testSuffix = 'daemon/replicated/replicated-operator-inspect.json'
+      // testSuffix = 'daemon/replicated/replicated-ui-inspect.json'
+      // testSuffix = 'daemon/replicated/replicated-versions.txt'
+      // testSuffix = 'daemon/replicated/runtime/goroutines.txt'
+      // testSuffix = 'daemon/replicated/tasks.txt'
 
       if (r.endsWith('license.txt')(path)) {
         await licenseCheck(context)
@@ -126,9 +125,7 @@ function fileChecker () {
         console.log(blue(path))
         stream().on('end', next)
         stream().pipe(process.stdout)
-        //stream().resume()
       } else {
-        //console.log(gray(path))
         skip()
       }
     } catch (error) {
@@ -137,7 +134,10 @@ function fileChecker () {
   }
 
   async function licenseCheck ({issues, stream}) {
-    const latestVersion = 447
+    const latest = {
+      version: 447,
+      hash: 'c3bba67'
+    }
     const line = await extractLine(line => r.startsWith('AppVersion:')(line))(stream())
     const [match, hash, version] = line.match(/:\s*(\w+)\s*\((\d+)\)$/) || []
 
@@ -146,10 +146,10 @@ function fileChecker () {
         level: 'error',
         message: 'Version information not found.'
       })
-    } else if (Number(version) < latestVersion) {
+    } else if (Number(version) < latest.version) {
       issues.push({
         level: 'warn',
-        message: `Installed version (${version}) is behind the latest (${latestVersion})`
+        message: `Installed version (${orange(version)}:${yellow(hash)}) is behind the latest (${orange(latest.version)}:${yellow(latest.hash)})`
       })
     }
   }

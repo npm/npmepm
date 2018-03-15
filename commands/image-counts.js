@@ -5,11 +5,12 @@ module.exports = {
 }
 
 function handler ({bundle}) {
-  const cliTruncate = require('cli-truncate')
+  // const cliTruncate = require('cli-truncate')
   const r = require('ramda')
   const {table} = require('table')
   const {runPs} = require('../lib/dockerps')
 
+  /*
   const getIp = settings => r.path(['Networks', 'bridge', 'IPAddress'])(settings) || ''
   const truncId = str => cliTruncate(str, 13)
   const truncName = str => cliTruncate(str, 21)
@@ -18,7 +19,7 @@ function handler ({bundle}) {
     : cliTruncate(str, 20, {position: 'start'})
   const fmtPorts = ports => {
     if (ports) {
-      return r.join(", ")(
+      return r.join(', ')(
         r.map(
           ({PrivatePort: priv, PublicPort: pub, Type: proto}) => `[${proto}/${priv}]:${pub}`
         )(ports)
@@ -27,6 +28,7 @@ function handler ({bundle}) {
       return ''
     }
   }
+  */
 
   // Listing of images grouped by id.
   runPs(bundle, {
@@ -50,4 +52,3 @@ function handler ({bundle}) {
     }
   })
 }
-

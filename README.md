@@ -1,4 +1,8 @@
 # npme Post Mortem
+
+[![Build Status][travis-image]][travis-url]
+[![NPM version][npm-image]][npm-url]
+
 Utilities for inspecting npme support bundles
 
 # Dependencies
@@ -25,10 +29,10 @@ $ npmepm <command> --help
 
 Run a command
 ```
-$ npmepm <command> <support-bundle-directory>
+$ npmepm <command> <support-bundle>
 ```
 
-# Wish List
-- Assume CWD is the root of the support bundle.
-- Handling of support bundles without extraction.
-
+[travis-url]: https://travis-ci.org/npm/npmepm
+[travis-image]: https://img.shields.io/travis/npm/npmepm/master.svg
+[npm-url]: https://www.npmjs.com/package/npmepm
+[npm-image]: https://img.shields.io/npm/v/npmepm.svg

@@ -4,6 +4,6 @@ module.exports = {
   handler
 }
 
-function handler({bundle}) {
+function handler ({bundle}) {
   console.log(`That's all i've got.`)
 }
