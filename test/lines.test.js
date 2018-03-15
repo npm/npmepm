@@ -39,11 +39,11 @@ tap.test('extractLine', async t => {
     ` `, l => true
   ), ' ', 'should support matches on a single line')
 
-  t.equal(await line(
+  t.equal(r.trim(await line(
     `
     
     `, l => true
-  ), '', 'should support processing of empty lines')
+  )), '', 'should support processing of empty lines')
 
   t.equal(r.trim(await line(
     `locate`, l => r.endsWith('locate')(l)

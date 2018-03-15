@@ -16,6 +16,7 @@
   "dependencies": {
     "@buzuli/color": "^1.2.0",
     "bluebird": "^3.5.1",
+    "byline": "^5.0.0",
     "chalk": "^2.3.0",
     "cli-truncate": "^1.1.0",
     "durations": "^3.4.1",
@@ -24,6 +25,7 @@
     "oboe": "^2.1.4",
     "ramda": "^0.25.0",
     "shelljs": "^0.7.8",
+    "stream-buffers": "^3.0.1",
     "table": "^4.0.2",
     "tap": "^10.7.3",
     "tar-stream": "^1.5.5",
