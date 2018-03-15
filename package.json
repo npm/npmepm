@@ -1,6 +1,6 @@
 {
   "name": "@npmcorp/npmepm",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "npm Enterprise Post Mortem",
   "main": "index.js",
   "bin": {
