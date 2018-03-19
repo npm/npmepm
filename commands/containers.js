@@ -1,4 +1,5 @@
-module.exports = { command: 'containers <bundle>',
+module.exports = {
+  command: 'containers <bundle>',
   desc: 'list containers ordered by age',
   handler
 }
