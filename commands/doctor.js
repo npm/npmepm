@@ -17,6 +17,8 @@ function handler ({bundle}) {
     })
     .on('file', health.checker)
     .once('end', () => {
+      // Summarize doctor's findings
+
       const issues = health.issues()
       const ic = issues.length // issue count
       const errors = r.filter(({level}) => level === 'error')(issues)
@@ -38,21 +40,27 @@ function handler ({bundle}) {
     })
 }
 
+// Health tracker factory
 function tracker () {
   const issues = []
   const checkFile = fileChecker()
 
   return {
     issues: () => issues,
-    checker: file => {
-      checkFile({issues, ...file})
+    checker: context => {
+      checkFile({issues, ...context})
     }
   }
 }
 
+// Check each file, processing its contents if its path is of interest
 function fileChecker () {
   const r = require('ramda')
-  const {blue, orange, yellow} = require('@buzuli/color')
+  const {blue, green, orange, purple, yellow} = require('@buzuli/color')
+
+  const {
+    parseStream
+  } = require('../lib/json')
 
   const {
     extractLine
@@ -121,6 +129,9 @@ function fileChecker () {
       if (r.endsWith('license.txt')(path)) {
         await licenseCheck(context)
         next()
+      } else if (r.endsWith('docker_ps_a.json')(path)) {
+        await dockerPsCheck(context)
+        next()
       } else if (r.endsWith(testSuffix)(path)) {
         console.log(blue(path))
         stream().on('end', next)
@@ -133,6 +144,7 @@ function fileChecker () {
     }
   }
 
+  // Check the Replicated license
   async function licenseCheck ({issues, stream}) {
     const latest = {
       version: 447,
@@ -149,9 +161,29 @@ function fileChecker () {
     } else if (Number(version) < latest.version) {
       issues.push({
         level: 'warn',
-        message: `Installed version (${orange(version)}:${yellow(hash)}) is behind the latest (${orange(latest.version)}:${yellow(latest.hash)})`
+        message: `Installed version (${orange(version)}:${yellow(hash)}) is behind the latest (${orange(latest.version)}:${yellow(latest.hash)}).`
       })
     }
+  }
+
+  async function dockerPsCheck ({issues, stream}) {
+    (await parseStream(stream()))
+      .filter(container => {
+        if (r.startsWith('sha256:')(container.Image)) return false
+        if (container.Image === 'hello-world') return false
+        return true
+      })
+      .filter(container => container.State !== 'running')
+      .forEach(container => {
+        const state = container.State
+        const name = r.head(container.Names)
+        const image = container.Image
+
+        issues.push({
+          level: 'warn',
+          message: `State for container ${yellow(name)} [${green(image)}] is ${(state ? blue(`'${state}'`) : purple(state))}.`
+        })
+      })
   }
 }
 
