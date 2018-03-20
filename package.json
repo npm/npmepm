@@ -1,6 +1,6 @@
 {
   "name": "npmepm",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "npm Enterprise Post Mortem",
   "main": "index.js",
   "bin": {
