@@ -84,8 +84,8 @@ function fileChecker () {
       // Health
       // testSuffix = 'docker_inspect.json' // for each container
       // testSuffix = 'daemon/commands/date'
-      // testSuffix = 'daemon/commands/df'
-      // testSuffix = 'daemon/commands/df_inodes'
+      // testSuffix = 'daemon/commands/df' // ✅
+      // testSuffix = 'daemon/commands/df_inodes' // ✅
       // testSuffix = 'daemon/commands/dmesg' // Cound unique messages
       // testSuffix = 'daemon/commands/free'
       // testSuffix = 'daemon/docker/docker_info.json'
@@ -165,6 +165,7 @@ function fileChecker () {
     return path
   }
 
+  // Check the space usage on each mount
   async function dfCheck ({issues, path, stream}) {
     const lines = await extractLines(line => {
       if (line.match(/^\s*Filesystem/))
@@ -195,6 +196,7 @@ function fileChecker () {
     })
   }
 
+  // Check the inode usage on each mount
   async function dfInodesCheck ({issues, path, stream}) {
     const lines = await extractLines(line => {
       if (line.match(/^\s*Filesystem/))
