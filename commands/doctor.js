@@ -5,7 +5,7 @@ module.exports = {
 }
 
 function handler ({bundle}) {
-  const {green, red, yellow, emoji} = require('@buzuli/color')
+  const {green, orange, red, yellow, emoji} = require('@buzuli/color')
   const r = require('ramda')
 
   const health = tracker()
@@ -33,7 +33,7 @@ function handler ({bundle}) {
         errors.forEach(({message}) => {
           console.info(emoji.inject(`:x:  ${red('ERROR')} : ${message}`))
         })
-        console.log(issueColor(emoji.inject(`${issueIcon}  There ${ic === 1 ? 'is' : 'are'} ${health.issues().length} health issue${ic === 1 ? '' : 's'} with this cluster. Details above :point_up:`)))
+        console.log(issueColor(emoji.inject(`${issueIcon}  There ${ic === 1 ? 'is' : 'are'} ${orange(ic)} health issue${ic === 1 ? '' : 's'} with this cluster. Details above :point_up:`)))
       } else {
         console.log(emoji.inject(':white_check_mark: '), green('Appears healthy.'))
       }
@@ -63,7 +63,8 @@ function fileChecker () {
   } = require('../lib/json')
 
   const {
-    extractLine
+    extractLine,
+    extractLines
   } = require('../lib/lines')
 
   return async (context) => {
@@ -88,7 +89,7 @@ function fileChecker () {
       // testSuffix = 'daemon/commands/dmesg' // Cound unique messages
       // testSuffix = 'daemon/commands/free'
       // testSuffix = 'daemon/docker/docker_info.json'
-      // testSuffix = 'daemon/docker/docker_ps_a.json'
+      // testSuffix = 'daemon/docker/docker_ps_a.json' // ✅
       // testSuffix = 'daemon/proc/cpuinfo' // powerful enough (4+ cores @ 2+ GHz)
       // testSuffix = 'daemon/proc/meminfo' // at least 16GB (ideally 32+)
       // testSuffix = 'daemon/proc/version' // is kernel version problematic?
@@ -100,7 +101,7 @@ function fileChecker () {
 
       // Informational
       // testSuffix = 'errors.txt'
-      // testSuffix = 'license.txt' // Determine if AppVersion is out of date
+      // testSuffix = 'license.txt' // ✅
       // testSuffix = 'daemon/replicated/daemon.json'
       // testSuffix = 'daemon/etc/sysconfig/replicated'
       // testSuffix = 'daemon/etc/sysconfig/replicated-operator'
@@ -126,11 +127,17 @@ function fileChecker () {
       // testSuffix = 'daemon/replicated/runtime/goroutines.txt'
       // testSuffix = 'daemon/replicated/tasks.txt'
 
-      if (r.endsWith('license.txt')(path)) {
+      if (r.endsWith('/license.txt')(path)) {
         await licenseCheck(context)
         next()
-      } else if (r.endsWith('docker_ps_a.json')(path)) {
+      } else if (r.endsWith('/docker_ps_a.json')(path)) {
         await dockerPsCheck(context)
+        next()
+      } else if (r.endsWith('/df')(path)) {
+        await dfCheck(context)
+        next()
+      } else if (r.endsWith('/df_inodes')(path)) {
+        await dfInodesCheck(context)
         next()
       } else if (r.endsWith(testSuffix)(path)) {
         console.log(blue(path))
@@ -144,8 +151,82 @@ function fileChecker () {
     }
   }
 
+  // Strip the first component of a path
+  function clipPath (path) {
+    return r.compose(
+      r.join('\/'),
+      r.tail,
+      r.split(/\//g)
+    )(path)
+  }
+
+  function prepPath (path) {
+    // return clipPath(Path)
+    return path
+  }
+
+  async function dfCheck ({issues, path, stream}) {
+    const lines = await extractLines(line => {
+      if (line.match(/^\s*Filesystem/))
+        return false
+      if (line.match(/\/proc\/\S+$/))
+        return false
+      if (line.match(/\/sys\/\S+$/))
+        return false
+      return true
+    })(stream())
+
+    const problems = r.compose(
+      r.filter(({percent}) => percent >= 80),
+      r.map(({percent, path}) => ({percent: Number(percent.replace(/[%]/, '')), path})),
+      r.filter(({percent}) => r.trim(percent) !== '-'),
+      r.map(([percent, path]) => ({percent, path})),
+      r.map(r.takeLast(2)),
+      r.filter(parts => parts.length > 2),
+      r.map(r.split(/\s+/))
+    )(lines)
+
+    problems.forEach(({percent, path: mount}) => {
+      const pct = orange(`${percent}%`)
+      issues.push({
+        level: percent > 97 ? 'error' : 'warn',
+        message: `Space usage is at ${pct} for mount ${green(mount)} [${blue(prepPath(path))}]`
+      })
+    })
+  }
+
+  async function dfInodesCheck ({issues, path, stream}) {
+    const lines = await extractLines(line => {
+      if (line.match(/^\s*Filesystem/))
+        return false
+      if (line.match(/\/proc\/\S+$/))
+        return false
+      if (line.match(/\/sys\/\S+$/))
+        return false
+      return true
+    })(stream())
+
+    const problems = r.compose(
+      r.filter(({percent}) => percent >= 80),
+      r.map(({percent, path}) => ({percent: Number(percent.replace(/[%]/, '')), path})),
+      r.filter(({percent}) => r.trim(percent) !== '-'),
+      r.map(([percent, path]) => ({percent, path})),
+      r.map(r.takeLast(2)),
+      r.filter(parts => parts.length > 2),
+      r.map(r.split(/\s+/))
+    )(lines)
+
+    problems.forEach(({percent, path: mount}) => {
+      const pct = orange(`${percent}%`)
+      issues.push({
+        level: percent > 97 ? 'error' : 'warn',
+        message: `Inode usage is at ${pct} for mount ${green(mount)} [${blue(prepPath(path))}]`
+      })
+    })
+  }
+
   // Check the Replicated license
-  async function licenseCheck ({issues, stream}) {
+  async function licenseCheck ({issues, path, stream}) {
     const latest = {
       version: 447,
       hash: 'c3bba67'
@@ -161,18 +242,15 @@ function fileChecker () {
     } else if (Number(version) < latest.version) {
       issues.push({
         level: 'warn',
-        message: `Installed version (${orange(version)}:${yellow(hash)}) is behind the latest (${orange(latest.version)}:${yellow(latest.hash)}).`
+        message: `Installed version (${orange(version)}:${yellow(hash)}) is behind the latest (${orange(latest.version)}:${yellow(latest.hash)}) [${blue(prepPath(path))}]`
       })
     }
   }
 
-  async function dockerPsCheck ({issues, stream}) {
+  // Check container states
+  async function dockerPsCheck ({issues, path, stream}) {
     (await parseStream(stream()))
-      .filter(container => {
-        if (r.startsWith('sha256:')(container.Image)) return false
-        if (container.Image === 'hello-world') return false
-        return true
-      })
+      .filter(container => !r.startsWith('sha256:')(container.Image))
       .filter(container => container.State !== 'running')
       .forEach(container => {
         const state = container.State
@@ -181,7 +259,7 @@ function fileChecker () {
 
         issues.push({
           level: 'warn',
-          message: `State for container ${yellow(name)} [${green(image)}] is ${(state ? blue(`'${state}'`) : purple(state))}.`
+          message: `State for container ${yellow(name)} [${green(image)}] is ${(state ? blue(`'${state}'`) : purple(state))} [${blue(prepPath(path))}]`
         })
       })
   }
