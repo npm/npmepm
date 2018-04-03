@@ -27,6 +27,7 @@
     "js-yaml": "^3.10.0",
     "oboe": "^2.1.4",
     "ramda": "^0.25.0",
+    "semver": "^5.5.0",
     "shelljs": "^0.7.8",
     "stream-buffers": "^3.0.1",
     "table": "^4.0.2",

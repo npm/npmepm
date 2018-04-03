@@ -56,6 +56,7 @@ function tracker () {
 // Check each file, processing its contents if its path is of interest
 function fileChecker () {
   const r = require('ramda')
+  const semver = require('semver')
   const {blue, green, orange, purple, yellow} = require('@buzuli/color')
 
   const {
@@ -88,7 +89,7 @@ function fileChecker () {
       // testSuffix = 'daemon/commands/df_inodes' // ✅
       // testSuffix = 'daemon/commands/dmesg' // Cound unique messages
       // testSuffix = 'daemon/commands/free'
-      // testSuffix = 'daemon/docker/docker_info.json'
+      // testSuffix = 'daemon/docker/docker_info.json' // ✅
       // testSuffix = 'daemon/docker/docker_ps_a.json' // ✅
       // testSuffix = 'daemon/proc/cpuinfo' // powerful enough (4+ cores @ 2+ GHz)
       // testSuffix = 'daemon/proc/meminfo' // at least 16GB (ideally 32+)
@@ -127,11 +128,19 @@ function fileChecker () {
       // testSuffix = 'daemon/replicated/runtime/goroutines.txt'
       // testSuffix = 'daemon/replicated/tasks.txt'
 
-      if (r.endsWith('/license.txt')(path)) {
+      if (r.endsWith(testSuffix)(path)) {
+        console.log(blue(path))
+        stream().on('end', next)
+        stream().pipe(process.stdout)
+        next()
+      } else if (r.endsWith('/license.txt')(path)) {
         await licenseCheck(context)
         next()
       } else if (r.endsWith('/docker_ps_a.json')(path)) {
         await dockerPsCheck(context)
+        next()
+      } else if (r.endsWith('/docker_info.json')(path)) {
+        await dockerInfoCheck(context)
         next()
       } else if (r.endsWith('/df')(path)) {
         await dfCheck(context)
@@ -139,10 +148,6 @@ function fileChecker () {
       } else if (r.endsWith('/df_inodes')(path)) {
         await dfInodesCheck(context)
         next()
-      } else if (r.endsWith(testSuffix)(path)) {
-        console.log(blue(path))
-        stream().on('end', next)
-        stream().pipe(process.stdout)
       } else {
         skip()
       }
@@ -261,6 +266,61 @@ function fileChecker () {
           message: `State for container ${yellow(name)} [${green(image)}] is ${(state ? blue(`'${state}'`) : purple(state))} [${blue(prepPath(path))}]`
         })
       })
+  }
+
+  async function dockerInfoCheck ({issues, path, stream}) {
+    const info = await parseStream(stream())
+    const {
+      Architecture: arch = '',
+      NCPU: cpuCount = 0,
+      MemTotal: totalMem = 0,
+      OSType: os = '',
+      ServerVersion: versionString = ''
+    } = info
+
+    if (os !== 'linux') {
+      issues.push({
+        level: 'warn',
+        message: `Unsupported OS: ${blue(os)}`
+      })
+    }
+
+    if (arch !== 'x86_64' && arch !== 'x64') {
+      issues.push({
+        level: 'warn',
+        message: `Unsupported Architecture: ${blue(arch)}`
+      })
+    }
+
+    if (cpuCount < 4) {
+      issues.push({
+        level: cpuCount < 2 ? 'error' : 'warn',
+        message: `Only ${orange(cpuCount)} CPU`
+      })
+    }
+
+    if (totalMem < 16000000000) {
+      const crit = totalMem < 8000000000
+      issues.push({
+        level: crit ? 'error' : 'warn',
+        message: `System memory is ${crit ? 'insufficient' : 'low'}: ${orange(totalMem.toLocaleString())} bytes`
+      })
+    }
+
+    const dockerVersion = semver.coerce(
+      r.compose(
+        r.join('.'),
+        r.map(s => s.replace(/^0+/, '')),
+        r.split('.')
+      )(versionString)
+    )
+
+    if (!semver.satisfies(dockerVersion, '>=17.6.0')) {
+      issues.push({
+        level: 'warn',
+        message: `Docker is out of date: version ${green(versionString)}`
+      })
+    }
   }
 }
 
