@@ -151,29 +151,23 @@ function fileChecker () {
     }
   }
 
-  // Strip the first component of a path
-  function clipPath (path) {
-    return r.compose(
-      r.join('\/'),
-      r.tail,
-      r.split(/\//g)
-    )(path)
-  }
-
   function prepPath (path) {
-    // return clipPath(Path)
+    // Future logic to clean up the path (trimmming prefix, etc.) can be added here later
     return path
   }
 
   // Check the space usage on each mount
   async function dfCheck ({issues, path, stream}) {
     const lines = await extractLines(line => {
-      if (line.match(/^\s*Filesystem/))
+      if (line.match(/^\s*Filesystem/)) {
         return false
-      if (line.match(/\/proc\/\S+$/))
+      }
+      if (line.match(/\/proc\/\S+$/)) {
         return false
-      if (line.match(/\/sys\/\S+$/))
+      }
+      if (line.match(/\/sys\/\S+$/)) {
         return false
+      }
       return true
     })(stream())
 
@@ -199,12 +193,15 @@ function fileChecker () {
   // Check the inode usage on each mount
   async function dfInodesCheck ({issues, path, stream}) {
     const lines = await extractLines(line => {
-      if (line.match(/^\s*Filesystem/))
+      if (line.match(/^\s*Filesystem/)) {
         return false
-      if (line.match(/\/proc\/\S+$/))
+      }
+      if (line.match(/\/proc\/\S+$/)) {
         return false
-      if (line.match(/\/sys\/\S+$/))
+      }
+      if (line.match(/\/sys\/\S+$/)) {
         return false
+      }
       return true
     })(stream())
 
