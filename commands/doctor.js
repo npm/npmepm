@@ -56,8 +56,12 @@ function tracker () {
 // Check each file, processing its contents if its path is of interest
 function fileChecker () {
   const r = require('ramda')
+  const moment = require('moment')
   const semver = require('semver')
   const {blue, green, orange, purple, yellow} = require('@buzuli/color')
+
+  const oneDay = 24 * 60 * 60 * 1000
+  const thirtyDays = 30 * oneDay
 
   const {
     parseStream
@@ -87,21 +91,21 @@ function fileChecker () {
       // testSuffix = 'daemon/commands/date'
       // testSuffix = 'daemon/commands/df' // ✅
       // testSuffix = 'daemon/commands/df_inodes' // ✅
-      // testSuffix = 'daemon/commands/dmesg' // Cound unique messages
+      // testSuffix = 'daemon/commands/dmesg' // Count unique messages?
       // testSuffix = 'daemon/commands/free'
       // testSuffix = 'daemon/docker/docker_info.json' // ✅
       // testSuffix = 'daemon/docker/docker_ps_a.json' // ✅
-      // testSuffix = 'daemon/proc/cpuinfo' // powerful enough (4+ cores @ 2+ GHz)
-      // testSuffix = 'daemon/proc/meminfo' // at least 16GB (ideally 32+)
+      // testSuffix = 'daemon/proc/cpuinfo'
+      // testSuffix = 'daemon/proc/meminfo' // 60% (warn) 90% (critical)
       // testSuffix = 'daemon/proc/version' // is kernel version problematic?
-      // testSuffix = 'daemon/proc/vmstat'
+      // testSuffix = 'daemon/proc/vmstat' // Look into meaningful values
       // testSuffix = 'daemon/etc/systemd/system/docker.service.d/http-proxy.conf'
       // testSuffix = 'daemon/replicated/hostInfo.json'
       // testSuffix = 'daemon/replicated/params.json' // Replicated configuration
       // testSuffix = 'scheduler/nodes.txt' // npme cluster nodes (docker servers)
 
       // Informational
-      // testSuffix = 'errors.txt'
+      // testSuffix = 'errors.txt' // Count unique messages? All lines?
       // testSuffix = 'license.txt' // ✅
       // testSuffix = 'daemon/replicated/daemon.json'
       // testSuffix = 'daemon/etc/sysconfig/replicated'
@@ -270,12 +274,14 @@ function fileChecker () {
 
   async function dockerInfoCheck ({issues, path, stream}) {
     const info = await parseStream(stream())
+
     const {
       Architecture: arch = '',
       NCPU: cpuCount = 0,
       MemTotal: totalMem = 0,
       OSType: os = '',
-      ServerVersion: versionString = ''
+      ServerVersion: versionString = '',
+      SystemTime: systemTimeString = ''
     } = info
 
     if (os !== 'linux') {
@@ -304,6 +310,17 @@ function fileChecker () {
       issues.push({
         level: crit ? 'error' : 'warn',
         message: `System memory is ${crit ? 'insufficient' : 'low'}: ${orange(totalMem.toLocaleString())} bytes`
+      })
+    }
+
+    const systemTime = moment(systemTimeString)
+    const now = moment()
+    const age = now.diff(systemTime)
+    if (age > thirtyDays) {
+      const ageString = orange((age / oneDay).toFixed(0))
+      issues.push({
+        level: 'warn',
+        message: `Service bundle is ${ageString} days old (created ${blue(systemTime.toISOString())})`
       })
     }
 
