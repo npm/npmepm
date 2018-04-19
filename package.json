@@ -34,11 +34,11 @@
     "stream-buffers": "^3.0.1",
     "table": "^4.0.2",
     "tar-stream": "^1.5.5",
-    "walk": "^2.3.9"
+    "walk": "^2.3.9",
+    "yargs": "^11.0.0"
   },
   "devDependencies": {
     "standard": "^11.0.1",
-    "tap": "^10.7.3",
-    "yargs": "^10.1.2"
+    "tap": "^10.7.3"
   }
 }
