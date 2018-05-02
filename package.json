@@ -2,6 +2,7 @@
   "name": "npmepm",
   "version": "1.8.0",
   "description": "npm Enterprise Post Mortem",
+  "repository": "github:npm/npmepm",
   "main": "index.js",
   "bin": {
     "npmepm": "bin/npmepm.js",
