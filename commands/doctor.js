@@ -79,9 +79,6 @@ function fileChecker () {
       let testSuffix = 'deadbeef'
       // const testSuffix = 'sysconfig/replicated'
 
-      // XXX:
-      // - for testing : ~/Documents/support/HP/2018-02-15
-
       // TODO:
       // - confirm all expected containers are running
       // - confirm all expected containers have been running for longer than 15 min.
@@ -100,7 +97,7 @@ function fileChecker () {
       // testSuffix = 'daemon/proc/version' // is kernel version problematic?
       // testSuffix = 'daemon/proc/vmstat' // Look into meaningful values
       // testSuffix = 'daemon/etc/systemd/system/docker.service.d/http-proxy.conf'
-      // testSuffix = 'daemon/replicated/hostInfo.json'
+      // testSuffix = 'daemon/replicated/host-info.json'
       // testSuffix = 'daemon/replicated/params.json' // Replicated configuration
       // testSuffix = 'scheduler/nodes.txt' // npme cluster nodes (docker servers)
 
@@ -113,6 +110,7 @@ function fileChecker () {
 
       // Advanced
       // testSuffix = 'stderr.log'
+      // testSuffix = 'daemon/auditlogs'
       // testSuffix = 'daemon/commands/ip_addr_show'
       // testSuffix = 'daemon/commands/ip_link_show'
       // testSuffix = 'daemon/commands/ip_route_show'
@@ -132,6 +130,22 @@ function fileChecker () {
       // testSuffix = 'daemon/replicated/runtime/goroutines.txt'
       // testSuffix = 'daemon/replicated/tasks.txt'
 
+      // Skip over most logs
+      /*
+      if (r.endsWith('stderr.log.gz')(path))
+        return skip()
+      if (r.endsWith('stdout.log.gz')(path))
+        return skip()
+      // */
+
+      // Just list out all paths
+      /*
+      console.log(blue(path))
+
+      skip()
+      return
+      // */
+      
       if (r.endsWith(testSuffix)(path)) {
         console.log(blue(path))
         stream().on('end', next)
@@ -364,6 +378,7 @@ function fileChecker () {
  * daemon/etc/centos-release -
  * daemon/etc/hostname -
  * daemon/etc/hosts -
+ * daemon/etc/lsb-release -
  * daemon/etc/os-release -
  * daemon/etc/sysconfig/replicated ?
  * daemon/etc/sysconfig/replicated-operator ?
@@ -383,10 +398,10 @@ function fileChecker () {
  *
  * daemon/replicated/config-commands.txt ?
  * daemon/replicated/daemon.json ?
- * daemon/replicated/daemon.json ?
- * daemon/replicated/hostInfo.json ?
+ * daemon/replicated/host-info.json ?
  * daemon/replicated/ledis-app.dump ?
  * daemon/replicated/ledis-registry.dump ?
+ * daemon/replicated/ledis-snapshots.dump ?
  * daemon/replicated/params.json ?
  * daemon/replicated/replicated-inspect.json ?
  * daemon/replicated/replicated-operator-inspect.json ?
@@ -397,6 +412,11 @@ function fileChecker () {
  * daemon/replicated/replicated.log ?
  * daemon/replicated/runtime/goroutines.txt ?
  * daemon/replicated/tasks.txt ?
+ *
+ * daemon/var/upstart/docker.log
+ * daemon/var/upstart/replicated-operator.log
+ * daemon/var/upstart/replicated-ur.log
+ * daemon/var/upstart/replicated.log
  *
  * scheduler/nodes.txt ?
  *
