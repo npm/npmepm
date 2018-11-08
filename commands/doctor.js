@@ -250,8 +250,8 @@ function fileChecker () {
   // Check the Replicated license
   async function licenseCheck ({issues, path, stream}) {
     const latest = {
-      version: 447,
-      hash: 'c3bba67'
+      version: 450,
+      hash: 'f82bd7b'
     }
     const line = await extractLine(line => r.startsWith('AppVersion:')(line))(stream())
     const [match, hash, version] = line.match(/:\s*(\w+)\s*\((\d+)\)$/) || []
