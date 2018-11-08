@@ -1,6 +1,6 @@
 {
   "name": "npmepm",
-  "version": "1.8.1",
+  "version": "1.9.0",
   "description": "npm Enterprise Post Mortem",
   "repository": "github:npm/npmepm",
   "main": "index.js",
